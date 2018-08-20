@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 project(FlatBuffers)
 
@@ -179,6 +179,14 @@ endif()
 include_directories(include)
 include_directories(grpc)
 
+add_library(flatbuffers_headers INTERFACE)
+ target_include_directories(flatbuffers_headers
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/grpc>
+    $<INSTALL_INTERFACE:include>
+)
+
 if(FLATBUFFERS_BUILD_FLATLIB)
   add_library(flatbuffers STATIC ${FlatBuffers_Library_SRCS})
   # CMake > 2.8.11: Attach header directory for when build via add_subdirectory().
@@ -268,12 +276,18 @@ if(FLATBUFFERS_INSTALL)
 
   install(DIRECTORY include/flatbuffers DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+  install(
+    TARGETS flatbuffers_headers EXPORT FlatbuffersTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
   set(FB_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/flatbuffers")
 
   configure_file(CMake/FlatbuffersConfigVersion.cmake.in FlatbuffersConfigVersion.cmake @ONLY)
   install(
-      FILES "CMake/FlatbuffersConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/FlatbuffersConfigVersion.cmake"
-      DESTINATION ${FB_CMAKE_DIR}
+    FILES "CMake/FlatbuffersConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/FlatbuffersConfigVersion.cmake"
+    DESTINATION ${FB_CMAKE_DIR}
   )
 
   if(FLATBUFFERS_BUILD_FLATLIB)
@@ -289,13 +303,13 @@ if(FLATBUFFERS_INSTALL)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
       )
     endif()
-
-    install(EXPORT FlatbuffersTargets
-      FILE FlatbuffersTargets.cmake
-      NAMESPACE flatbuffers::
-      DESTINATION ${FB_CMAKE_DIR}
-    )
   endif()
+
+  install(EXPORT FlatbuffersTargets
+    FILE FlatbuffersTargets.cmake
+    NAMESPACE flatbuffers::
+    DESTINATION ${FB_CMAKE_DIR}
+  )
 
   if(FLATBUFFERS_BUILD_FLATC)
     install(
